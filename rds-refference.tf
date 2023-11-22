@@ -1,7 +1,7 @@
 # configured aws provider with proper credentials
 provider "aws" {
-  region  = 
-  profile = 
+  region  = "us-east-1"
+  profile = "terraform-user"
 }
 
 
@@ -20,37 +20,37 @@ data "aws_availability_zones" "available_zones" {}
 
 # create a default subnet in the first az if one does not exit
 resource "aws_default_subnet" "subnet_az1" {
-  availability_zone = 
+  availability_zone = data.aws_availability_zones.available_zones.names[0]
 }
 
 # create a default subnet in the second az if one does not exit
 resource "aws_default_subnet" "subnet_az2" {
-  availability_zone = 
+  availability_zone = data.aws_availability_zones.available_zones.names[1]
 }
 
 # create security group for the web server
 resource "aws_security_group" "webserver_security_group" {
   name        = "webserver security group"
   description = "enable http access on port 80"
-  vpc_id      = 
+  vpc_id      = aws_default_vpc.default_vpc.id
 
   ingress {
     description      = "http access"
-    from_port        = 
-    to_port          = 
-    protocol         = 
-    cidr_blocks      = 
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
   }
 
   egress {
-    from_port        = 
-    to_port          = 
-    protocol         = 
-    cidr_blocks      = 
+    from_port        = 0
+    to_port          = 0
+    protocol         = -1
+    cidr_blocks      =  ["0.0.0.0/0"]
   }
 
   tags   = {
-    Name = 
+    Name = "webserver security group"
   }
 }
 
@@ -58,54 +58,54 @@ resource "aws_security_group" "webserver_security_group" {
 resource "aws_security_group" "database_security_group" {
   name        = "database security group"
   description = "enable mysql/aurora access on port 3306"
-  vpc_id      = 
+  vpc_id      = aws_default_vpc.default_vpc.id
 
   ingress {
     description      = "mysql/aurora access"
-    from_port        = 
-    to_port          = 
-    protocol         = 
-    security_groups  = 
+    from_port        = 3306
+    to_port          = 3306
+    protocol         = "tcp"
+    security_groups  = [aws_security_group.webserver_security_group.id]
   }
 
   egress {
-    from_port        = 
-    to_port          = 
-    protocol         = 
-    cidr_blocks      = 
+    from_port        = 0
+    to_port          = 0
+    protocol         = -1
+    cidr_blocks      = ["0.0.0.0/0"]
   }
 
   tags   = {
-    Name = 
+    Name = "database security group"
   }
 }
 
 
 # create the subnet group for the rds instance
 resource "aws_db_subnet_group" "database_subnet_group" {
-  name         = 
-  subnet_ids   = 
-  description  = 
+  name         = "database-suhnets"
+  subnet_ids   = [aws_default_subnet.subnet_az1.id, aws_default_subnet.subnet_az2.id]
+  description  = "subnets for database instance"
 
   tags   = {
-    Name = 
+    Name = "database-suhnets"
   }
 }
 
 
 # create the rds instance
 resource "aws_db_instance" "db_instance" {
-  engine                  = 
-  engine_version          = 
-  multi_az                = 
-  identifier              = 
-  username                = 
-  password                = 
-  instance_class          = 
-  allocated_storage       = 
-  db_subnet_group_name    = 
-  vpc_security_group_ids  = 
-  availability_zone       = 
-  db_name                 = 
-  skip_final_snapshot     = 
+  engine                  = "mysql"
+  engine_version          = "8.0.31"
+  multi_az                = false
+  identifier              = "dev-rds-instance"
+  username                = "azeezs"
+  password                = "azeezs123"
+  instance_class          = "d.t2.micro"
+  allocated_storage       = 200
+  db_subnet_group_name    = aws_db_subnet_group.database_subnet_group.name
+  vpc_security_group_ids  = ["aws_security_group.database_security_group.id]
+  availability_zone       = data.aws_availability_zones.available_zones.names[0]
+  db_name                 = "applicationdb"
+  skip_final_snapshot     = true
 }
