@@ -101,7 +101,7 @@ resource "aws_db_instance" "db_instance" {
   identifier              = "dev-rds-instance"
   username                = "azeezs"
   password                = "azeezs123"
-  instance_class          = "d.t2.micro"
+  instance_class          = "db.t2.micro"
   allocated_storage       = 200
   db_subnet_group_name    = aws_db_subnet_group.database_subnet_group.name
   vpc_security_group_ids  = ["aws_security_group.database_security_group.id]
